@@ -1,37 +1,25 @@
-import './App.css'
-import GoogleLogin from './components/GoogleLogin'
+import { Routes, Route } from 'react-router-dom'
+import Landing from './pages/Landing'
+import Dashboard from './pages/Dashboard'
 
+/**
+ * Main App Component with Routing
+ * 
+ * This component sets up all the routes for your application.
+ * 
+ * Routes:
+ * - "/" - Landing page (home page)
+ * - "/dashboard" - Dashboard page (protected, requires login)
+ */
 function App() {
   return (
-    <div className="landing-page">
-      <div className="hero-section">
-        <h1 className="hero-title">SpyPry</h1>
-        <p className="hero-subtitle">
-          Take control of your data. Make sure it's never sold to third-party companies.
-        </p>
-        <p className="hero-description">
-          SpyPry helps you monitor and protect your personal information, ensuring that your data stays yours and yours alone.
-        </p>
-        <div className="login-section">
-          <GoogleLogin />
-        </div>
-      </div>
+    <Routes>
+      {/* Route for the landing/home page */}
+      <Route path="/" element={<Landing />} />
       
-      <div className="features-section">
-        <div className="feature">
-          <h3>🔒 Data Protection</h3>
-          <p>Monitor who has access to your data and prevent unauthorized sharing</p>
-        </div>
-        <div className="feature">
-          <h3>🛡️ Privacy First</h3>
-          <p>Keep your personal information out of third-party hands</p>
-        </div>
-        <div className="feature">
-          <h3>👁️ Transparency</h3>
-          <p>See exactly how your data is being used and by whom</p>
-        </div>
-      </div>
-    </div>
+      {/* Route for the dashboard */}
+      <Route path="/dashboard" element={<Dashboard />} />
+    </Routes>
   )
 }
 
