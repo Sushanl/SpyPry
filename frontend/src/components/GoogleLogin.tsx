@@ -1,8 +1,11 @@
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const BACKEND_URL = "http://localhost:8000";
 
 export default function GoogleLogin() {
+  const navigate = useNavigate();
+
   useEffect(() => {
     // @ts-expect-error
     window.google?.accounts.id.initialize({
@@ -19,9 +22,9 @@ export default function GoogleLogin() {
         if (!r.ok) {
           console.error("Login failed");
           return;
-        }
+        } 
 
-        console.log("Logged in");
+        navigate("/dashboard");
       },
     });
 
