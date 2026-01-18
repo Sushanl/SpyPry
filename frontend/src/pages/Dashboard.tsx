@@ -251,7 +251,8 @@ useEffect(() => {
           setLetterError(null);
         } else {
           const missingFields = response.missing ? Object.keys(response.missing).filter(k => response.missing![k as keyof typeof response.missing]).join(', ') : 'unknown';
-          setLetterError(`Could not generate letter. Missing: ${missingFields}`);
+          const foundInfo = response.found ? ` Found: ${JSON.stringify(response.found, null, 2)}` : '';
+          setLetterError(`Could not generate letter. Missing: ${missingFields}.${foundInfo}`);
           setLetterData(null);
         }
       } catch (err) {

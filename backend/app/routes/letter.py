@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+from urllib.parse import urlparse
 
 from ..ai.privacy_finder import find_privacy_policy_and_email
 from ..ai.letter_generator import generate_letter_xml, parse_result_xml
@@ -23,16 +24,29 @@ def generate_letter_route(body: GenerateLetterRequest):
     policy_url = found.get("privacy_policy_url")
     contact_email = found.get("privacy_contact_email")
 
-    # If we can't find required fields, return a structured “missing”
-    if not policy_url or not contact_email:
+    # If we can't find privacy policy URL, return error
+    if not policy_url:
         return {
             "ok": False,
             "missing": {
-                "privacy_policy_url": policy_url is None,
+                "privacy_policy_url": True,
                 "privacy_contact_email": contact_email is None,
             },
-            "found": found,  # useful for debugging in UI
+            "found": found,
         }
+
+    # If we have policy URL but no email, try common email patterns
+    if not contact_email:
+        parsed = urlparse(found["base_url"])
+        domain = parsed.netloc.replace("www.", "")
+        common_emails = [
+            f"privacy@{domain}",
+            f"dpo@{domain}",
+            f"dataprotection@{domain}",
+            f"legal@{domain}",
+        ]
+        contact_email = common_emails[0]
+        found["privacy_contact_email_estimated"] = True
 
     # Step B: LLM writes letter using provided facts
     raw_xml = generate_letter_xml(
@@ -46,21 +60,23 @@ def generate_letter_route(body: GenerateLetterRequest):
     )
 
     try:
-        letter, email_address_parsed, company_name_out, subject = parse_result_xml(raw_xml)
+        parsed_result = parse_result_xml(raw_xml)
+        letter, email_address_parsed, company_name_out, subject = parsed_result
     except ValueError as e:
-        # If model returned MISSING_FIELDS or malformed output
         raise HTTPException(status_code=500, detail=str(e))
 
     # Fallback: Use the found email if LLM didn't use it correctly
-    # This ensures accuracy even if the LLM makes a mistake
     final_email = contact_email
-    if email_address_parsed and email_address_parsed.lower() != contact_email.lower():
-        # Check if parsed email is similar or if it's clearly wrong
-        if contact_email.lower() in email_address_parsed.lower() or "@" not in email_address_parsed:
-            final_email = contact_email
-        else:
-            # LLM might have found a different valid email, use it
-            final_email = email_address_parsed
+    if email_address_parsed:
+        email_lower = email_address_parsed.lower()
+        contact_lower = contact_email.lower()
+        if email_lower != contact_lower:
+            # Check if parsed email is similar or if it's clearly wrong
+            if contact_lower in email_lower or "@" not in email_address_parsed:
+                final_email = contact_email
+            else:
+                # LLM might have found a different valid email, use it
+                final_email = email_address_parsed
 
     return {
         "ok": True,

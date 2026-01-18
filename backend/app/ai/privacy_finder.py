@@ -58,7 +58,8 @@ def _fetch(url: str, timeout: int = 10) -> str | None:
 def _extract_links(html: str) -> list[str]:
     # naive href extractor, avoids extra deps
     # captures href="..." or href='...'
-    hrefs = re.findall(r'href\s*=\s*["\']([^"\']+)["\']', html, flags=re.IGNORECASE)
+    pattern = r'href\s*=\s*["\']([^"\']+)["\']'
+    hrefs = re.findall(pattern, html, flags=re.IGNORECASE)
     return hrefs
 
 
@@ -107,7 +108,8 @@ def find_privacy_policy_and_email(company_website_url: str) -> dict:
         for h in hrefs:
             if not h or h.startswith("mailto:") or h.startswith("javascript:"):
                 continue
-            if any(k in h.lower() for k in ["privacy", "legal", "terms", "contact"]):
+            keywords = ["privacy", "legal", "terms", "contact"]
+            if any(k in h.lower() for k in keywords):
                 abs_url = urljoin(base, h)
                 if _is_same_domain(base, abs_url):
                     likely.append(abs_url)
@@ -164,6 +166,20 @@ def find_privacy_policy_and_email(company_website_url: str) -> dict:
         )
         # prefer any email with nonzero score, else just first
         best_email = scored[0][0] if scored else None
+
+    # 5) Fallback: if we have a privacy policy URL but no email,
+    # try to extract from privacy policy page
+    if not best_email and policy_url:
+        privacy_html = _fetch(policy_url)
+        if privacy_html:
+            privacy_emails = EMAIL_RE.findall(privacy_html)
+            if privacy_emails:
+                scored = sorted(
+                    [(e, _score_email(e)) for e in privacy_emails],
+                    key=lambda x: x[1],
+                    reverse=True,
+                )
+                best_email = scored[0][0] if scored else None
 
     return {
         "base_url": base,
