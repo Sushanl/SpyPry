@@ -8,6 +8,10 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 import json
 from pathlib import Path
+import base64
+from email.utils import parsedate_to_datetime
+from fastapi import Response
+
 
 
 router = APIRouter(prefix="/gmail", tags=["gmail"])
@@ -29,6 +33,13 @@ TOK_DIR = Path(".gmail_tokens")
 TOK_DIR.mkdir(exist_ok=True)
 
 
+def _header(headers, name: str) -> str | None:
+    for h in headers or []:
+        if h.get("name", "").lower() == name.lower():
+            return h.get("value")
+    return None
+
+
 def save_creds(session_id: str, creds: Credentials) -> None:
     (TOK_DIR / f"{session_id}.json").write_text(creds.to_json())
 
@@ -38,8 +49,8 @@ def load_creds(session_id: str) -> Credentials | None:
     if not p.exists():
         return None
     data = json.loads(p.read_text())
-    return Credentials(**data)
-
+    return Credentials.from_authorized_user_info(data, SCOPES)
+    
 
 def make_flow(redirect_uri: str) -> Flow:
     if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
@@ -181,3 +192,45 @@ def gmail_disconnect(request: Request):
     resp = Response(content='{"ok": true}', media_type="application/json")
     resp.delete_cookie("gmail_session_id", path="/")
     return resp
+
+
+@router.get("/debug/print")
+def debug_print_emails(request: Request):
+    session_id = request.cookies.get("gmail_session_id")
+    if not session_id:
+        raise HTTPException(401, "Missing session cookie")
+
+    creds = load_creds(session_id)
+    if not creds:
+        raise HTTPException(401, "Not connected to Gmail")
+
+    service = build("gmail", "v1", credentials=creds)
+
+    # Get last 10 messages
+    listing = service.users().messages().list(userId="me", maxResults=10).execute()
+    msgs = listing.get("messages", [])
+
+    out = []
+    for m in msgs:
+        msg = service.users().messages().get(
+            userId="me",
+            id=m["id"],
+            format="metadata",
+            metadataHeaders=["From", "Subject", "Date"],
+        ).execute()
+
+        headers = msg.get("payload", {}).get("headers", [])
+        subj = _header(headers, "Subject") or "(no subject)"
+        frm = _header(headers, "From") or "(no from)"
+        date = _header(headers, "Date") or "(no date)"
+        snippet = msg.get("snippet", "")
+
+        out.append({"from": frm, "subject": subj, "date": date, "snippet": snippet})
+
+    # Print to server logs (quick proof)
+    print("\n=== Gmail debug (latest 10) ===")
+    for i, item in enumerate(out, 1):
+        print(f"{i}. {item['subject']}  |  {item['from']}  |  {item['date']}")
+    print("=== end ===\n")
+
+    return {"count": len(out), "emails": out}
