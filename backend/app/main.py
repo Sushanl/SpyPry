@@ -2,6 +2,8 @@ import os
 from datetime import timedelta
 from dotenv import load_dotenv
 
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -11,7 +13,6 @@ from google.auth.transport import requests as grequests
 
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from .routes.gmail import router as gmail_router
-load_dotenv()
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
