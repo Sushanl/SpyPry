@@ -6,7 +6,7 @@
   max-width: var(--max-width);
   margin: 0 auto;
   gap: var(--space-8);
-  background-color: #ffffff;
+  background-color: #e8d8c9 !important;
   width: 100%;
   box-sizing: border-box;
 }
@@ -16,7 +16,7 @@
   align-items: center;
   gap: var(--space-2);
   text-decoration: none;
-  color: var(--color-text);
+  color: #191E29;
   font-weight: var(--font-weight-bold);
   font-size: var(--font-size-xl);
 }
@@ -34,14 +34,14 @@
 
 .top-nav__links a {
   text-decoration: none;
-  color: var(--color-text);
+  color: #696E79;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   transition: color 0.2s;
 }
 
 .top-nav__links a:hover {
-  color: var(--color-text-muted);
+  color: #01C38D;
 }
 
 @media (max-width: 768px) {

@@ -125,18 +125,7 @@ useEffect(() => {
   }, [searchParams, setSearchParams]);
   
 
-  useEffect(() => {
-    // Load mock data for demo
-    if (viewState === "results" && scanResults.length === 0) {
-      setScanResults(mockAccounts.map(acc => ({
-        domain: acc.domain,
-        displayName: acc.displayName,
-        confidence: "high" as const,
-        evidence: ["welcome" as const],
-        lastSeen: acc.firstSeen,
-      })));
-    }
-  }, [viewState, scanResults.length]);
+  // Removed automatic mock data loading - only show actual scan results
 
   const handleStartScan = async () => {
     if (!gmailConnected) {
@@ -349,14 +338,7 @@ useEffect(() => {
   }
 
   // Results view - matches Figma table layout
-  const accounts = scanResults.length > 0 ? scanResults : mockAccounts.map(acc => ({
-    domain: acc.domain,
-    displayName: acc.displayName,
-    confidence: "high" as const,
-    evidence: ["welcome" as const],
-    lastSeen: acc.firstSeen,
-    hasOptOut: acc.hasOptOut,
-  }));
+  // Table displays emails from getGmailMessages(), count should match what's displayed
 
   return (
     <div className="dashboard-page">
@@ -371,18 +353,15 @@ useEffect(() => {
           </div>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             {gmailConnected ? (
-              <Button variant="pill" color="purple" onClick={handleDisconnectGmail}>
+              <Button variant="pill" color="blue" onClick={handleDisconnectGmail}>
                 Sign out of Gmail
               </Button>
             ) : (
-              <Button variant="pill" color="purple" onClick={handleConnectGmail}>
+              <Button variant="pill" color="rust" onClick={handleConnectGmail}>
                 Connect Gmail
               </Button>
             )}
-            <Button variant="pill" color="coral" onClick={handleStartScan}>
-              {gmailConnected ? 'Scan Accounts' : 'Delete Scan'}
-            </Button>
-            <Button variant="pill" color="black" onClick={handleLogout}>
+            <Button variant="pill" color="blue" onClick={handleLogout}>
               Log Out
             </Button>
           </div>
@@ -392,23 +371,23 @@ useEffect(() => {
           <div style={{ 
             padding: '20px', 
             margin: '20px 0', 
-            backgroundColor: '#fff3cd', 
-            border: '1px solid #ffc107', 
+            backgroundColor: '#ffffff', 
+            border: '2px solid #4b607f', 
             borderRadius: '8px',
             textAlign: 'center'
           }}>
-            <p style={{ margin: '0 0 12px 0', fontWeight: '500' }}>
+            <p style={{ margin: '0 0 12px 0', fontWeight: '500', color: '#4b607f' }}>
               Connect your Gmail account to scan for accounts
             </p>
-            <Button variant="primary" color="purple" onClick={handleConnectGmail}>
+            <Button variant="primary" color="rust" onClick={handleConnectGmail}>
               Connect Gmail
             </Button>
           </div>
         )}
 
-        {gmailConnected && (
+        {gmailConnected && emails.length > 0 && (
           <div className="accounts-count">
-            We found {accounts.length} accounts
+            We found {emails.length} accounts
           </div>
         )}
 
@@ -418,7 +397,7 @@ useEffect(() => {
               <tr>
                 <th>Company Name</th>
                 <th>First Seen</th>
-                <th>Opt-Out</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -436,7 +415,7 @@ useEffect(() => {
                       <div className="optout-actions">
                         <Button
                           variant="pill"
-                          color="purple"
+                          color="blue"
                           onClick={() => handleFindOptOut(domain)}
                           disabled={loading}
                         >
@@ -444,7 +423,7 @@ useEffect(() => {
                         </Button>
                         <Button 
                           variant="pill" 
-                          color="purple" 
+                          color="rust" 
                           onClick={(e) => {
                             e.stopPropagation();
                             handleOptOut(result, 'generate');

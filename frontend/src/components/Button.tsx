@@ -2,7 +2,7 @@ import './Button.css';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'pill';
-  color?: 'black' | 'coral' | 'purple' | 'orange' | 'white';
+  color?: 'black' | 'coral' | 'purple' | 'orange' | 'white' | 'teal' | 'dark-blue' | 'blue' | 'rust';
   children: React.ReactNode;
 }
 
