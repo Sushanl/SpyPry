@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { scanAccounts, type ScanResult } from '../api/client';
+import { useNavigate } from 'react-router-dom';
+import { scanAccounts, logout, getMe, type ScanResult, type UserInfo } from '../api/client';
 import TopNav from '../components/TopNav';
 import Footer from '../components/Footer';
 import Button from '../components/Button';
@@ -18,6 +19,9 @@ const mockAccounts = [
 ];
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<UserInfo | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [viewState, setViewState] = useState<ViewState>("results");
   const [scanResults, setScanResults] = useState<ScanResult[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +34,22 @@ export default function Dashboard() {
     "Extracting service information...",
     "Finalizing results...",
   ];
+
+  // Check authentication on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      setIsLoading(true);
+      const userInfo = await getMe();
+      if (!userInfo) {
+        // Not logged in, redirect to landing page
+        navigate('/');
+        return;
+      }
+      setUser(userInfo);
+      setIsLoading(false);
+    };
+    checkAuth();
+  }, [navigate]);
 
   useEffect(() => {
     // Load mock data for demo
@@ -79,6 +99,29 @@ export default function Dashboard() {
       alert(`Generating opt-out letter for ${result.displayName || result.domain}`);
     }
   };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="dashboard-page">
+        <TopNav variant="app" />
+        <div className="dashboard-container">
+          <h2>Loading...</h2>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // If not authenticated, don't render (will redirect)
+  if (!user) {
+    return null;
+  }
 
   if (viewState === "scanning") {
     return (
@@ -148,11 +191,18 @@ export default function Dashboard() {
         <div className="dashboard-header">
           <div className="dashboard-title-section">
             <h1 className="dashboard-title">Dashboard</h1>
-            <p className="dashboard-subtitle">Here's the accounts we found</p>
+            <p className="dashboard-subtitle">
+              Welcome, {user.name || user.email}! Here's the accounts we found
+            </p>
           </div>
-          <Button variant="pill" color="coral" onClick={handleStartScan}>
-            Delete Scan
-          </Button>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <Button variant="pill" color="coral" onClick={handleStartScan}>
+              Delete Scan
+            </Button>
+            <Button variant="pill" color="black" onClick={handleLogout}>
+              Log Out
+            </Button>
+          </div>
         </div>
 
         <div className="accounts-count">

@@ -131,3 +131,15 @@ export async function scanAccounts(): Promise<ScanResult[]> {
   const data = await http<ScanResult[]>("/gmail/scan");
   return data;
 }
+
+export async function logout(): Promise<void> {
+  if (MOCK_MODE) {
+    return;
+  }
+
+  try {
+    await http<{ ok: boolean }>("/auth/logout", { method: "POST" });
+  } catch {
+    // Ignore errors on logout
+  }
+}

@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import TopNav from '../components/TopNav';
 import Footer from '../components/Footer';
 import Button from '../components/Button';
+import GoogleLogin from '../components/GoogleLogin';
 import './Landing.css';
 
 function Landing() {
@@ -16,9 +17,9 @@ function Landing() {
             <h1 className="hero-title">Take control of your data</h1>
             <p className="hero-subtitle">Opt-out of your data being stolen to third parties</p>
             <div className="hero-actions">
-              <Button variant="primary" color="black" onClick={() => navigate('/dashboard')}>
-                Go to Dashboard
-              </Button>
+              <div style={{ width: '100%', maxWidth: '300px' }}>
+                <GoogleLogin />
+              </div>
               <Button variant="secondary" color="black" onClick={() => navigate('/learn-more')}>
                 Learn more
               </Button>
