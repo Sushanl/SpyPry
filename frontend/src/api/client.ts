@@ -20,6 +20,28 @@ export type EmailMessage = {
   lastSeen?: string;
 };
 
+export type DeleteLinkPurpose =
+  | "account_delete"
+  | "privacy_rights"
+  | "contact_support"
+  | "unknown";
+
+export type DeleteLinkEvidence = {
+  title: string;
+  url: string;
+  snippet: string;
+};
+
+export type DeleteLinkResult = {
+  domain: string;
+  best_url: string | null;
+  purpose: DeleteLinkPurpose;
+  confidence: number;
+  steps: string[];
+  evidence: DeleteLinkEvidence[];
+  notes: string;
+};
+
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
 const MOCK_MODE = import.meta.env.VITE_MOCK === "true";
@@ -153,6 +175,13 @@ export async function scanAccounts(): Promise<ScanResult[]> {
   const data = await http<ScanResult[]>("/gmail/scan");
   return data;
 }
+
+export async function findDeleteLink(domain: string): Promise<DeleteLinkResult> {
+    return http<DeleteLinkResult>("/privacy/find_delete_link", {
+      method: "POST",
+      body: JSON.stringify({ domain }),
+    });
+  }
 
 export async function logout(): Promise<void> {
   if (MOCK_MODE) {
