@@ -182,9 +182,6 @@ useEffect(() => {
     setGmailConnected(status.connected);
   };
 
-<<<<<<< HEAD
-  const handleOptOut = async (result: ScanResult | EmailMessage, action: 'save' | 'generate') => {
-=======
   const handleFindOptOut = async (domain?: string) => {
     if (!domain) {
       alert("No domain found for this row.");
@@ -223,12 +220,8 @@ useEffect(() => {
       setActiveSearchDomain(null);
     }
   };
-  
-  
 
-  const handleOptOut = (result: ScanResult | EmailMessage, action: 'save' | 'generate') => {
-
->>>>>>> 6c4684a237e82af97314f5a0996b6471fb165e3d
+  const handleOptOut = async (result: ScanResult | EmailMessage, action: 'save' | 'generate') => {
     if (action === 'save') {
       alert(`Saving opt-out preference for ${result.displayName || result.domain}`);
     } else {
@@ -526,7 +519,7 @@ useEffect(() => {
               <div className="optout-linkbox warn">
                 <div className="optout-linkbox-title">No on-domain deletion page found</div>
                 <div className="optout-linkbox-sub">
-                  We’ll show the best on-domain support/contact path instead.
+                  We'll show the best on-domain support/contact path instead.
                 </div>
               </div>
             )}
