@@ -156,3 +156,15 @@ export async function logout(): Promise<void> {
     // Ignore errors on logout
   }
 }
+
+export async function disconnectGmail(): Promise<void> {
+  if (MOCK_MODE) {
+    return;
+  }
+
+  try {
+    await http<{ ok: boolean }>("/gmail/disconnect", { method: "POST" });
+  } catch {
+    // Ignore errors on disconnect
+  }
+}

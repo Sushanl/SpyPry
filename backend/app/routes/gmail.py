@@ -6,8 +6,13 @@ from google_auth_oauthlib.flow import Flow
 from typing import Dict
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
-from email.utils import parseaddr
+import json
+from pathlib import Path
+import base64
+from email.utils import parsedate_to_datetime
+from fastapi import Response
+
+
 
 router = APIRouter(prefix="/gmail", tags=["gmail"])
 
@@ -23,16 +28,29 @@ SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
 ]
 
-TOKEN_STORE: Dict[str, Credentials] = {}
 
-def get_creds_from_request(request: Request) -> Credentials:
-    session_id = request.cookies.get("gmail_session_id")
-    if not session_id:
-        raise HTTPException(status_code=401, detail="Missing gmail_session_id cookie. Connect Gmail first.")
-    creds = TOKEN_STORE.get(session_id)
-    if not creds:
-        raise HTTPException(status_code=401, detail="No stored Gmail credentials for this session. Reconnect Gmail.")
-    return creds
+TOK_DIR = Path(".gmail_tokens")
+TOK_DIR.mkdir(exist_ok=True)
+
+
+def _header(headers, name: str) -> str | None:
+    for h in headers or []:
+        if h.get("name", "").lower() == name.lower():
+            return h.get("value")
+    return None
+
+
+def save_creds(session_id: str, creds: Credentials) -> None:
+    (TOK_DIR / f"{session_id}.json").write_text(creds.to_json())
+
+
+def load_creds(session_id: str) -> Credentials | None:
+    p = TOK_DIR / f"{session_id}.json"
+    if not p.exists():
+        return None
+    data = json.loads(p.read_text())
+    return Credentials.from_authorized_user_info(data, SCOPES)
+    
 
 def make_flow(redirect_uri: str) -> Flow:
     if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
@@ -52,6 +70,7 @@ def make_flow(redirect_uri: str) -> Flow:
         scopes=SCOPES,
         redirect_uri=redirect_uri,
     )
+
 
 @router.get("/connect")
 def gmail_connect(request: Request):
@@ -115,7 +134,8 @@ def gmail_callback(request: Request):
 
     # 4) Create a session id + store tokens in memory
     session_id = request.cookies.get("gmail_session_id") or secrets.token_urlsafe(24)
-    TOKEN_STORE[session_id] = creds
+    save_creds(session_id, creds)
+
 
     # 5) Redirect to frontend, set session cookie
     resp = RedirectResponse(f"{FRONTEND_URL}/?gmail=connected", status_code=302)
@@ -133,50 +153,84 @@ def gmail_callback(request: Request):
 
 
 @router.get("/messages")
-def gmail_messages(request: Request, q: str = "", max_results: int = 25):
-        """
-        Debug endpoint: returns a list of emails (headers + snippet) so we can see
-        what the Gmail API is returning and iterate on account detection.
-        """
-        creds = get_creds_from_request(request)
+def list_messages(request: Request):
+    session_id = request.cookies.get("gmail_session_id")
+    if not session_id:
+        raise HTTPException(401, "Missing session cookie")
 
-        # Default query: high-signal account emails (tune later)
-        if not q:
-            q = 'subject:(welcome OR verify OR verification OR "confirm your email" OR "activate your account" OR "password reset" OR receipt OR invoice OR "order confirmation" OR "new sign-in" OR "security alert")'
+    creds = load_creds(session_id)
+    if not creds:
+        raise HTTPException(401, "Not connected to Gmail")
 
-        try:
-            service = build("gmail", "v1", credentials=creds)
+    service = build("gmail", "v1", credentials=creds)
+    return service.users().messages().list(userId="me", maxResults=5).execute()
 
-            res = service.users().messages().list(
-                userId="me",
-                q=q,
-                maxResults=min(max_results, 100),
-            ).execute()
 
-            msg_ids = res.get("messages", [])
-            messages = []
+@router.get("/status")
+def gmail_status(request: Request):
+    session_id = request.cookies.get("gmail_session_id")
+    if not session_id:
+        return {"connected": False}
 
-            for m in msg_ids:
-                msg = service.users().messages().get(
-                    userId="me",
-                    id=m["id"],
-                    format="metadata",
-                    metadataHeaders=["From", "To", "Subject", "Date"],
-                ).execute()
+    creds = load_creds(session_id)
+    if not creds:
+        return {"connected": False}
 
-                headers = {h["name"].lower(): h["value"] for h in msg.get("payload", {}).get("headers", [])}
+    return {"connected": True}
 
-                messages.append({
-                    "id": msg.get("id"),
-                    "from": headers.get("from"),
-                    "subject": headers.get("subject"),
-                    "date": headers.get("date"),
-                    "snippet": msg.get("snippet"),
-                })
 
-            return {"query": q, "count": len(messages), "messages": messages}
+@router.post("/disconnect")
+def gmail_disconnect(request: Request):
+    from fastapi import Response
+    
+    session_id = request.cookies.get("gmail_session_id")
+    if session_id:
+        p = TOK_DIR / f"{session_id}.json"
+        if p.exists():
+            p.unlink()
+    
+    resp = Response(content='{"ok": true}', media_type="application/json")
+    resp.delete_cookie("gmail_session_id", path="/")
+    return resp
 
-        except HttpError as e:
-            raise HTTPException(status_code=500, detail=f"Gmail API error: {e}")
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to read messages: {e}")
+
+@router.get("/debug/print")
+def debug_print_emails(request: Request):
+    session_id = request.cookies.get("gmail_session_id")
+    if not session_id:
+        raise HTTPException(401, "Missing session cookie")
+
+    creds = load_creds(session_id)
+    if not creds:
+        raise HTTPException(401, "Not connected to Gmail")
+
+    service = build("gmail", "v1", credentials=creds)
+
+    # Get last 10 messages
+    listing = service.users().messages().list(userId="me", maxResults=10).execute()
+    msgs = listing.get("messages", [])
+
+    out = []
+    for m in msgs:
+        msg = service.users().messages().get(
+            userId="me",
+            id=m["id"],
+            format="metadata",
+            metadataHeaders=["From", "Subject", "Date"],
+        ).execute()
+
+        headers = msg.get("payload", {}).get("headers", [])
+        subj = _header(headers, "Subject") or "(no subject)"
+        frm = _header(headers, "From") or "(no from)"
+        date = _header(headers, "Date") or "(no date)"
+        snippet = msg.get("snippet", "")
+
+        out.append({"from": frm, "subject": subj, "date": date, "snippet": snippet})
+
+    # Print to server logs (quick proof)
+    print("\n=== Gmail debug (latest 10) ===")
+    for i, item in enumerate(out, 1):
+        print(f"{i}. {item['subject']}  |  {item['from']}  |  {item['date']}")
+    print("=== end ===\n")
+
+    return {"count": len(out), "emails": out}
