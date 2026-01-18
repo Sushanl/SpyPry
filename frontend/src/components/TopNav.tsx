@@ -1,0 +1,38 @@
+import { Link } from 'react-router-dom';
+import './TopNav.css';
+
+type TopNavVariant = 'landing' | 'auth' | 'app';
+
+interface TopNavProps {
+  variant?: TopNavVariant;
+}
+
+export default function TopNav({ variant = 'landing' }: TopNavProps) {
+  return (
+    <nav className={`top-nav top-nav--${variant}`}>
+      <Link to="/" className="top-nav__logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        <span>SpyPry</span>
+      </Link>
+      <div className="top-nav__links">
+        {variant === 'landing' && (
+          <>
+            <Link to="/">Home</Link>
+            <Link to="/contact">Contact</Link>
+            <Link to="/dashboard">Account</Link>
+          </>
+        )}
+        {variant === 'app' && (
+          <>
+            <Link to="/contact">Contact</Link>
+            <Link to="/faq">FAQ</Link>
+          </>
+        )}
+      </div>
+    </nav>
+  );
+}

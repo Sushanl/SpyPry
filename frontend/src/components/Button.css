@@ -1,0 +1,107 @@
+.btn {
+  font-family: var(--font-family);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-base);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Primary variant */
+.btn--primary {
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-md);
+}
+
+.btn--primary.btn--black {
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+.btn--primary.btn--black:hover:not(:disabled) {
+  background: #333;
+}
+
+.btn--primary.btn--coral {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.btn--primary.btn--coral:hover:not(:disabled) {
+  background: #ff5252;
+}
+
+/* Secondary variant */
+.btn--secondary {
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  border: 2px solid var(--color-text);
+  color: var(--color-text);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: var(--color-muted);
+}
+
+/* Pill variant */
+.btn--pill {
+  padding: var(--space-2) var(--space-5);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+}
+
+.btn--pill.btn--coral {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.btn--pill.btn--coral:hover:not(:disabled) {
+  background: #ff5252;
+}
+
+.btn--pill.btn--purple {
+  background: var(--color-accent-purple);
+  color: var(--color-bg);
+}
+
+.btn--pill.btn--purple:hover:not(:disabled) {
+  background: #8e44ad;
+}
+
+.btn--pill.btn--orange {
+  background: var(--color-accent-orange);
+  color: var(--color-bg);
+}
+
+.btn--pill.btn--orange:hover:not(:disabled) {
+  background: #ff7a2e;
+}
+
+.btn--pill.btn--black {
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+.btn--pill.btn--black:hover:not(:disabled) {
+  background: #333;
+}
+
+.btn--pill.btn--white {
+  background: var(--color-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.btn--pill.btn--white:hover:not(:disabled) {
+  background: var(--color-muted);
+}
