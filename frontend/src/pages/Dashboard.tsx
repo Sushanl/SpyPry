@@ -430,7 +430,7 @@ useEffect(() => {
                           }}
                           disabled={isGeneratingLetter}
                         >
-                          {hasLetter ? "View Letter" : "Generate Letter"}
+                          {hasLetter ? "View Letter" : "Request Opt-Out"}
                         </Button>
                       </div>
                     </td>

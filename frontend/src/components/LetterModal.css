@@ -34,7 +34,7 @@
 }
 
 .modal-title {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 600;
   margin: 0;
   color: #191E29;
@@ -88,10 +88,12 @@
   font-weight: 600;
   min-width: 120px;
   color: #696E79;
+  font-size: var(--font-size-lg);
 }
 
 .info-value {
   color: #191E29;
+  font-size: var(--font-size-lg);
 }
 
 .letter-content {
@@ -107,4 +109,5 @@
   word-wrap: break-word;
   border: none;
   color: #191E29;
+  font-size: var(--font-size-lg);
 }
