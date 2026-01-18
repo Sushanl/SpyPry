@@ -14,6 +14,9 @@ from google.auth.transport import requests as grequests
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from .routes.gmail import router as gmail_router
 
+from .routes.privacy import router as privacy_router
+
+
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 SESSION_SECRET = os.getenv("SESSION_SECRET", "dev-secret")
@@ -123,3 +126,5 @@ def me(request: Request):
 
 
 app.include_router(gmail_router)
+app.include_router(privacy_router)
+
