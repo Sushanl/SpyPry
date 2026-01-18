@@ -5,6 +5,10 @@ from fastapi.responses import RedirectResponse
 from google_auth_oauthlib.flow import Flow
 from typing import Dict
 from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+import json
+from pathlib import Path
+
 
 router = APIRouter(prefix="/gmail", tags=["gmail"])
 
@@ -20,7 +24,22 @@ SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
 ]
 
-TOKEN_STORE: Dict[str, Credentials] = {}
+
+TOK_DIR = Path(".gmail_tokens")
+TOK_DIR.mkdir(exist_ok=True)
+
+
+def save_creds(session_id: str, creds: Credentials) -> None:
+    (TOK_DIR / f"{session_id}.json").write_text(creds.to_json())
+
+
+def load_creds(session_id: str) -> Credentials | None:
+    p = TOK_DIR / f"{session_id}.json"
+    if not p.exists():
+        return None
+    data = json.loads(p.read_text())
+    return Credentials(**data)
+
 
 def make_flow(redirect_uri: str) -> Flow:
     if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
@@ -40,6 +59,7 @@ def make_flow(redirect_uri: str) -> Flow:
         scopes=SCOPES,
         redirect_uri=redirect_uri,
     )
+
 
 @router.get("/connect")
 def gmail_connect(request: Request):
@@ -103,7 +123,8 @@ def gmail_callback(request: Request):
 
     # 4) Create a session id + store tokens in memory
     session_id = request.cookies.get("gmail_session_id") or secrets.token_urlsafe(24)
-    TOKEN_STORE[session_id] = creds
+    save_creds(session_id, creds)
+
 
     # 5) Redirect to frontend, set session cookie
     resp = RedirectResponse(f"{FRONTEND_URL}/?gmail=connected", status_code=302)
@@ -117,4 +138,46 @@ def gmail_callback(request: Request):
     )
     # Clear the temporary oauth state cookie
     resp.delete_cookie("gmail_oauth_state")
+    return resp
+
+
+@router.get("/messages")
+def list_messages(request: Request):
+    session_id = request.cookies.get("gmail_session_id")
+    if not session_id:
+        raise HTTPException(401, "Missing session cookie")
+
+    creds = load_creds(session_id)
+    if not creds:
+        raise HTTPException(401, "Not connected to Gmail")
+
+    service = build("gmail", "v1", credentials=creds)
+    return service.users().messages().list(userId="me", maxResults=5).execute()
+
+
+@router.get("/status")
+def gmail_status(request: Request):
+    session_id = request.cookies.get("gmail_session_id")
+    if not session_id:
+        return {"connected": False}
+
+    creds = load_creds(session_id)
+    if not creds:
+        return {"connected": False}
+
+    return {"connected": True}
+
+
+@router.post("/disconnect")
+def gmail_disconnect(request: Request):
+    from fastapi import Response
+    
+    session_id = request.cookies.get("gmail_session_id")
+    if session_id:
+        p = TOK_DIR / f"{session_id}.json"
+        if p.exists():
+            p.unlink()
+    
+    resp = Response(content='{"ok": true}', media_type="application/json")
+    resp.delete_cookie("gmail_session_id", path="/")
     return resp

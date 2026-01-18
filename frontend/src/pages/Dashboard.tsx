@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { scanAccounts, logout, getMe, getGmailStatus, startGmailConnect, type ScanResult, type UserInfo } from '../api/client';
+import { scanAccounts, logout, getMe, getGmailStatus, startGmailConnect, disconnectGmail, type ScanResult, type UserInfo } from '../api/client';
 import TopNav from '../components/TopNav';
 import Footer from '../components/Footer';
 import Button from '../components/Button';
@@ -59,13 +59,35 @@ export default function Dashboard() {
   }, [navigate]);
 
   // Handle Gmail connection callback
-  useEffect(() => {
-    if (searchParams.get('gmail_connected') === 'true') {
-      setGmailConnected(true);
-      // Remove query parameter from URL
-      setSearchParams({});
-    }
+// Handle Gmail connection callback
+useEffect(() => {
+    const gmailParam = searchParams.get("gmail"); // backend uses ?gmail=connected
+    if (gmailParam !== "connected") return;
+  
+    (async () => {
+      try {
+        // This MUST send cookies. Ensure your client uses credentials: "include".
+        const gmailStatus = await getGmailStatus();
+  
+        if (!gmailStatus.connected) {
+          setError("Gmail auth returned, but backend has no session. Try reconnecting.");
+          setViewState("error");
+          return;
+        }
+  
+        setGmailConnected(true);
+        // Remove query parameter from URL
+        const next = new URLSearchParams(searchParams);
+        next.delete("gmail");
+        setSearchParams(next);
+
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to confirm Gmail connection");
+        setViewState("error");
+      }
+    })();
   }, [searchParams, setSearchParams]);
+  
 
   useEffect(() => {
     // Load mock data for demo
@@ -115,6 +137,14 @@ export default function Dashboard() {
 
   const handleConnectGmail = () => {
     startGmailConnect();
+  };
+
+  const handleDisconnectGmail = async () => {
+    await disconnectGmail();
+    setGmailConnected(false);
+    // Refresh status to confirm
+    const status = await getGmailStatus();
+    setGmailConnected(status.connected);
   };
 
   const handleOptOut = (result: ScanResult, action: 'save' | 'generate') => {
@@ -221,7 +251,11 @@ export default function Dashboard() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            {!gmailConnected && (
+            {gmailConnected ? (
+              <Button variant="pill" color="purple" onClick={handleDisconnectGmail}>
+                Sign out of Gmail
+              </Button>
+            ) : (
               <Button variant="pill" color="purple" onClick={handleConnectGmail}>
                 Connect Gmail
               </Button>
