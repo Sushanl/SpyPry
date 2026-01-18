@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import './GoogleLogin.css';
 
 const BACKEND_URL = "http://localhost:8000";
 
@@ -15,7 +16,7 @@ declare global {
           }) => void;
           renderButton: (
             element: HTMLElement | null,
-            config: { theme: string; size: string }
+            config: { theme: string; size: string; text?: string; width?: string }
           ) => void;
         };
       };
@@ -83,7 +84,7 @@ export default function GoogleLogin() {
         // @ts-expect-error - Google Identity Services types not available
         window.google.accounts.id.renderButton(
           document.getElementById("google-btn"),
-          { theme: "outline", size: "large" }
+          { theme: "outline", size: "large", text: "signin_with", width: "100%" }
         );
       } catch (error) {
         console.error("Error initializing Google Sign In:", error);
@@ -94,5 +95,5 @@ export default function GoogleLogin() {
     checkGoogleScript();
   }, [navigate]);
 
-  return <div id="google-btn" />;
+  return <div id="google-btn" className="google-login-btn" />;
 }

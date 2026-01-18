@@ -1,6 +1,8 @@
 import { Routes, Route } from 'react-router-dom'
 import Landing from './pages/Landing'
+import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
+import FAQ from './pages/FAQ'
 
 /**
  * Main App Component with Routing
@@ -9,16 +11,17 @@ import Dashboard from './pages/Dashboard'
  * 
  * Routes:
  * - "/" - Landing page (home page)
+ * - "/login" - Login page
  * - "/dashboard" - Dashboard page (protected, requires login)
+ * - "/faq" - FAQ page
  */
 function App() {
   return (
     <Routes>
-      {/* Route for the landing/home page */}
       <Route path="/" element={<Landing />} />
-      
-      {/* Route for the dashboard */}
+      <Route path="/login" element={<Login />} />
       <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/faq" element={<FAQ />} />
     </Routes>
   )
 }
