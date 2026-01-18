@@ -16,6 +16,7 @@ from .routes.gmail import router as gmail_router
 
 from .routes.privacy import router as privacy_router
 
+from .routes.gmail_scan import router as gmail_scan_router
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
@@ -127,4 +128,6 @@ def me(request: Request):
 
 app.include_router(gmail_router)
 app.include_router(privacy_router)
+
+app.include_router(gmail_scan_router)
 
