@@ -5,6 +5,9 @@ from fastapi.responses import RedirectResponse
 from google_auth_oauthlib.flow import Flow
 from typing import Dict
 from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from email.utils import parseaddr
 
 router = APIRouter(prefix="/gmail", tags=["gmail"])
 
@@ -21,6 +24,15 @@ SCOPES = [
 ]
 
 TOKEN_STORE: Dict[str, Credentials] = {}
+
+def get_creds_from_request(request: Request) -> Credentials:
+    session_id = request.cookies.get("gmail_session_id")
+    if not session_id:
+        raise HTTPException(status_code=401, detail="Missing gmail_session_id cookie. Connect Gmail first.")
+    creds = TOKEN_STORE.get(session_id)
+    if not creds:
+        raise HTTPException(status_code=401, detail="No stored Gmail credentials for this session. Reconnect Gmail.")
+    return creds
 
 def make_flow(redirect_uri: str) -> Flow:
     if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
@@ -118,3 +130,53 @@ def gmail_callback(request: Request):
     # Clear the temporary oauth state cookie
     resp.delete_cookie("gmail_oauth_state")
     return resp
+
+
+@router.get("/messages")
+def gmail_messages(request: Request, q: str = "", max_results: int = 25):
+        """
+        Debug endpoint: returns a list of emails (headers + snippet) so we can see
+        what the Gmail API is returning and iterate on account detection.
+        """
+        creds = get_creds_from_request(request)
+
+        # Default query: high-signal account emails (tune later)
+        if not q:
+            q = 'subject:(welcome OR verify OR verification OR "confirm your email" OR "activate your account" OR "password reset" OR receipt OR invoice OR "order confirmation" OR "new sign-in" OR "security alert")'
+
+        try:
+            service = build("gmail", "v1", credentials=creds)
+
+            res = service.users().messages().list(
+                userId="me",
+                q=q,
+                maxResults=min(max_results, 100),
+            ).execute()
+
+            msg_ids = res.get("messages", [])
+            messages = []
+
+            for m in msg_ids:
+                msg = service.users().messages().get(
+                    userId="me",
+                    id=m["id"],
+                    format="metadata",
+                    metadataHeaders=["From", "To", "Subject", "Date"],
+                ).execute()
+
+                headers = {h["name"].lower(): h["value"] for h in msg.get("payload", {}).get("headers", [])}
+
+                messages.append({
+                    "id": msg.get("id"),
+                    "from": headers.get("from"),
+                    "subject": headers.get("subject"),
+                    "date": headers.get("date"),
+                    "snippet": msg.get("snippet"),
+                })
+
+            return {"query": q, "count": len(messages), "messages": messages}
+
+        except HttpError as e:
+            raise HTTPException(status_code=500, detail=f"Gmail API error: {e}")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to read messages: {e}")
