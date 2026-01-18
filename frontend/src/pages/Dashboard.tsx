@@ -1,6 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { scanAccounts, logout, getMe, getGmailStatus, startGmailConnect, disconnectGmail, generateLetter, type ScanResult, type UserInfo, type EmailMessage, type LetterData } from '../api/client';
+import {
+  scanAccounts,
+  logout,
+  getMe,
+  getGmailStatus,
+  startGmailConnect,
+  disconnectGmail,
+  generateLetter,
+  findDeleteLink,
+  type ScanResult,
+  type UserInfo,
+  type EmailMessage,
+  type LetterData,
+  type DeleteLinkResult,
+} from '../api/client';
 import TopNav from '../components/TopNav';
 import Footer from '../components/Footer';
 import Button from '../components/Button';
@@ -35,6 +49,10 @@ export default function Dashboard() {
   const [letterData, setLetterData] = useState<LetterData | null>(null);
   const [isGeneratingLetter, setIsGeneratingLetter] = useState(false);
   const [letterError, setLetterError] = useState<string | null>(null);
+  const [optOutByDomain, setOptOutByDomain] = useState<Record<string, DeleteLinkResult>>({});
+  const [optOutLoading, setOptOutLoading] = useState<Record<string, boolean>>({});
+  const [optOutOpen, setOptOutOpen] = useState<DeleteLinkResult | null>(null);
+  const [activeSearchDomain, setActiveSearchDomain] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -164,7 +182,53 @@ useEffect(() => {
     setGmailConnected(status.connected);
   };
 
+<<<<<<< HEAD
   const handleOptOut = async (result: ScanResult | EmailMessage, action: 'save' | 'generate') => {
+=======
+  const handleFindOptOut = async (domain?: string) => {
+    if (!domain) {
+      alert("No domain found for this row.");
+      return;
+    }
+  
+    // If cached, open immediately
+    const cached = optOutByDomain[domain];
+    if (cached) {
+      setOptOutOpen(cached);
+      return;
+    }
+  
+    setActiveSearchDomain(domain);
+    setOptOutOpen({
+      domain,
+      best_url: null,
+      purpose: "unknown",
+      confidence: 0,
+      steps: [],
+      evidence: [],
+      notes: "",
+    });
+  
+    setOptOutLoading((prev) => ({ ...prev, [domain]: true }));
+  
+    try {
+      const result = await findDeleteLink(domain);
+      setOptOutByDomain((prev) => ({ ...prev, [domain]: result }));
+      setOptOutOpen(result);
+    } catch (e: any) {
+      alert(`Failed to find delete/opt-out link: ${e.message ?? e}`);
+      setOptOutOpen(null);
+    } finally {
+      setOptOutLoading((prev) => ({ ...prev, [domain]: false }));
+      setActiveSearchDomain(null);
+    }
+  };
+  
+  
+
+  const handleOptOut = (result: ScanResult | EmailMessage, action: 'save' | 'generate') => {
+
+>>>>>>> 6c4684a237e82af97314f5a0996b6471fb165e3d
     if (action === 'save') {
       alert(`Saving opt-out preference for ${result.displayName || result.domain}`);
     } else {
@@ -347,30 +411,152 @@ useEffect(() => {
               </tr>
             </thead>
             <tbody>
-              {emails.map((result, idx) => {
+            {emails.map((result, idx) => {
+                const domain = result.domain;
+                const loading = !!optOutLoading[domain];
+                const cached = optOutByDomain[domain];
+
                 return (
-                  <tr key={idx}>
-                    <td className="company-name">{result.displayName}</td>
-                    <td className="first-seen">{result.lastSeen}</td>
+                <tr key={idx}>
+                    <td className="company-name">{result.displayName || domain}</td>
+                    <td className="first-seen">{result.lastSeen || "-"}</td>
                     <td className="opt-out">
-                      <Button 
-                        variant="pill" 
-                        color="purple" 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOptOut(result, 'generate');
-                        }}
-                      >
-                        Generate Letter
-                      </Button>
+                      <div className="optout-actions">
+                        <Button
+                          variant="pill"
+                          color="purple"
+                          onClick={() => handleFindOptOut(domain)}
+                          disabled={loading}
+                        >
+                          {loading ? "Searching..." : cached?.best_url ? "View Options" : "Find Delete Link"}
+                        </Button>
+                        <Button 
+                          variant="pill" 
+                          color="purple" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOptOut(result, 'generate');
+                          }}
+                        >
+                          Generate Letter
+                        </Button>
+                      </div>
                     </td>
-                  </tr>
+                </tr>
                 );
-              })}
+            })}
             </tbody>
+
           </table>
         </div>
       </main>
+      {optOutOpen && (
+  <div
+    className="optout-modal-overlay"
+    onClick={() => {
+      setOptOutOpen(null);
+      setActiveSearchDomain(null);
+    }}
+  >
+    <div className="optout-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="optout-modal-hero">
+        <div className="optout-hero-left">
+          <div className="optout-hero-title">Delete / Opt-Out Options</div>
+          <div className="optout-hero-sub">
+            We find the most official on-domain path to delete your account or contact support.
+          </div>
+
+          <div className="optout-meta-row">
+            <span className="optout-pill">
+              Domain: <strong>{optOutOpen.domain}</strong>
+            </span>
+
+            <span className={`optout-badge purpose-${optOutOpen.purpose}`}>
+              {optOutOpen.purpose === "account_delete" ? "Account Deletion" :
+               optOutOpen.purpose === "privacy_rights" ? "Privacy Rights" :
+               optOutOpen.purpose === "contact_support" ? "Contact Support" : "Unknown"}
+            </span>
+
+            <span className="optout-pill">
+              Confidence: <strong>{Math.round((optOutOpen.confidence || 0) * 100)}%</strong>
+            </span>
+          </div>
+        </div>
+
+        <button
+          className="optout-modal-close"
+          onClick={() => {
+            setOptOutOpen(null);
+            setActiveSearchDomain(null);
+          }}
+          aria-label="Close"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div className="optout-modal-body">
+        {/* Searching state */}
+        {activeSearchDomain === optOutOpen.domain && (
+          <div className="optout-searching">
+            <div className="optout-shield">
+              <div className="optout-shield-inner" />
+            </div>
+            <div className="optout-searching-text">
+              <div className="optout-searching-title">Searching official deletion steps…</div>
+              <div className="optout-searching-sub">Scanning public pages on {optOutOpen.domain}</div>
+              <div className="optout-scanbar">
+                <div className="optout-scanbar-fill" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Result state */}
+        {activeSearchDomain !== optOutOpen.domain && (
+          <>
+            {optOutOpen.best_url ? (
+              <div className="optout-linkbox">
+                <div className="optout-linkbox-title">Best official page</div>
+                <a className="optout-link" href={optOutOpen.best_url} target="_blank" rel="noreferrer">
+                  {optOutOpen.best_url}
+                </a>
+              </div>
+            ) : (
+              <div className="optout-linkbox warn">
+                <div className="optout-linkbox-title">No on-domain deletion page found</div>
+                <div className="optout-linkbox-sub">
+                  We’ll show the best on-domain support/contact path instead.
+                </div>
+              </div>
+            )}
+
+            <div className="optout-steps">
+              <div className="optout-section-title">Steps</div>
+              <ol className="optout-steps-list">
+                {(optOutOpen.steps || []).map((s, i) => (
+                  <li key={i} className="optout-step" style={{ animationDelay: `${i * 60}ms` }}>
+                    <span className="optout-step-index">{i + 1}</span>
+                    <span className="optout-step-text">{s}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+
+            {optOutOpen.notes && (
+              <div className="optout-notes">
+                <div className="optout-section-title">Notes</div>
+                <div className="optout-notes-text">{optOutOpen.notes}</div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  </div>
+)}
+
+
       <Footer />
       
       <LetterModal
