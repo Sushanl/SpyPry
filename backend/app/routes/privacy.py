@@ -1,9 +1,13 @@
 import os, json, re
 from urllib.parse import urlparse
+from dotenv import load_dotenv
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from openai import OpenAI
+
+
+load_dotenv(override=True)
 
 client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 router = APIRouter(prefix="/privacy", tags=["privacy"])

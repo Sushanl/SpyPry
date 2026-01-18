@@ -49,6 +49,7 @@ export default function Dashboard() {
   const [letterData, setLetterData] = useState<LetterData | null>(null);
   const [isGeneratingLetter, setIsGeneratingLetter] = useState(false);
   const [letterError, setLetterError] = useState<string | null>(null);
+  const [lettersByDomain, setLettersByDomain] = useState<Record<string, LetterData>>({});
   const [optOutByDomain, setOptOutByDomain] = useState<Record<string, DeleteLinkResult>>({});
   const [optOutLoading, setOptOutLoading] = useState<Record<string, boolean>>({});
   const [optOutOpen, setOptOutOpen] = useState<DeleteLinkResult | null>(null);
@@ -212,8 +213,9 @@ useEffect(() => {
       const result = await findDeleteLink(domain);
       setOptOutByDomain((prev) => ({ ...prev, [domain]: result }));
       setOptOutOpen(result);
-    } catch (e: any) {
-      alert(`Failed to find delete/opt-out link: ${e.message ?? e}`);
+    } catch (e) {
+      const errorMessage = e instanceof Error ? e.message : String(e);
+      alert(`Failed to find delete/opt-out link: ${errorMessage}`);
       setOptOutOpen(null);
     } finally {
       setOptOutLoading((prev) => ({ ...prev, [domain]: false }));
@@ -227,6 +229,19 @@ useEffect(() => {
     } else {
       const companyName = result.displayName || result.domain || 'Unknown';
       const companyDomain = result.domain || companyName;
+      
+      // Check if letter already exists for this domain
+      const existingLetter = lettersByDomain[companyDomain];
+      if (existingLetter) {
+        // Just show the existing letter
+        setLetterData(existingLetter);
+        setIsLetterModalOpen(true);
+        setIsGeneratingLetter(false);
+        setLetterError(null);
+        return;
+      }
+      
+      // Generate new letter
       setIsLetterModalOpen(true);
       setIsGeneratingLetter(true);
       setLetterData(null);
@@ -235,12 +250,15 @@ useEffect(() => {
       try {
         const response = await generateLetter(companyName, companyDomain);
         if (response.ok && response.letter && response.email_address && response.email_subject) {
-          setLetterData({
+          const newLetter: LetterData = {
             letter: response.letter,
             email_address: response.email_address,
             company_name: response.company_name || companyName,
             email_subject: response.email_subject,
-          });
+          };
+          setLetterData(newLetter);
+          // Store the letter for this domain
+          setLettersByDomain((prev) => ({ ...prev, [companyDomain]: newLetter }));
           setLetterError(null);
         } else {
           const missingFields = response.missing ? Object.keys(response.missing).filter(k => response.missing![k as keyof typeof response.missing]).join(', ') : 'unknown';
@@ -408,6 +426,7 @@ useEffect(() => {
                 const domain = result.domain;
                 const loading = !!optOutLoading[domain];
                 const cached = optOutByDomain[domain];
+                const hasLetter = !!lettersByDomain[domain];
 
                 return (
                 <tr key={idx}>
@@ -430,8 +449,9 @@ useEffect(() => {
                             e.stopPropagation();
                             handleOptOut(result, 'generate');
                           }}
+                          disabled={isGeneratingLetter}
                         >
-                          Generate Letter
+                          {hasLetter ? "View Letter" : "Generate Letter"}
                         </Button>
                       </div>
                     </td>
