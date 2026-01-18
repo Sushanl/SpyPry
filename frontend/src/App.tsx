@@ -3,6 +3,7 @@ import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import FAQ from './pages/FAQ'
+import LearnMore from './pages/LearnMore'
 
 /**
  * Main App Component with Routing
@@ -22,6 +23,8 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/faq" element={<FAQ />} />
+      <Route path="/learn-more" element={<LearnMore />} />
+
     </Routes>
   )
 }

@@ -56,8 +56,8 @@ function Landing() {
                 <li>We detect likely accounts.</li>
                 <li>You send opt-out requests.</li>
               </ol>
-              <Button variant="primary" color="black" onClick={() => navigate('/learn-more')}>
-                Learn More
+              <Button variant="primary" color="black" onClick={() => navigate('/faq')}>
+                FAQ
               </Button>
             </div>
             <div className="feature-illustration">

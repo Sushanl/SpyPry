@@ -5,6 +5,10 @@
   padding: var(--space-6) var(--space-8);
   max-width: var(--max-width);
   margin: 0 auto;
+  gap: var(--space-8);
+  background-color: #ffffff;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .top-nav__logo {

@@ -22,14 +22,12 @@ export default function TopNav({ variant = 'landing' }: TopNavProps) {
         {variant === 'landing' && (
           <>
             <Link to="/">Home</Link>
-            <Link to="/contact">Contact</Link>
-            <Link to="/dashboard">Account</Link>
+            <Link to="/login">Log In</Link>
           </>
         )}
         {variant === 'app' && (
           <>
-            <Link to="/contact">Contact</Link>
-            <Link to="/faq">FAQ</Link>
+            <Link to="/learn-more">Learn More</Link>
           </>
         )}
       </div>
