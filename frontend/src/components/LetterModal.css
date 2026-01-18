@@ -14,7 +14,7 @@
 }
 
 .modal-content {
-  background: white;
+  background: #e8d8c9;
   border-radius: 12px;
   padding: 24px;
   max-width: 600px;
@@ -22,7 +22,7 @@
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 8px 24px rgba(25, 30, 41, 0.15);
-  border: 1px solid #696E79;
+  border: 2px solid #4b607f;
   margin: auto;
 }
 
@@ -57,7 +57,7 @@
 }
 
 .modal-close:hover {
-  background-color: #f0fdf4;
+  background-color: rgba(75, 96, 127, 0.1);
   color: #191E29;
 }
 
@@ -95,7 +95,7 @@
 }
 
 .letter-content {
-  background-color: #f9fafb;
+  background-color: transparent;
   padding: 12px;
   border-radius: 6px;
   white-space: pre-wrap;
@@ -105,6 +105,6 @@
   max-height: 400px;
   overflow-y: auto;
   word-wrap: break-word;
-  border: 1px solid #e5e7eb;
+  border: none;
   color: #191E29;
 }
