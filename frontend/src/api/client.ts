@@ -12,6 +12,15 @@ export type UserInfo = {
   name?: string;
 };
 
+export type EmailMessage = {
+  domain: string;
+  displayName?: string;
+  confidence: "high" | "medium" | "low";
+  evidence?: Array<"welcome" | "receipt" | "reset" | "login_alert">;
+  lastSeen?: string;
+};
+
+
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
 const MOCK_MODE = import.meta.env.VITE_MOCK === "true";
 
@@ -167,4 +176,11 @@ export async function disconnectGmail(): Promise<void> {
   } catch {
     // Ignore errors on disconnect
   }
+}
+
+export async function getGmailMessages(): Promise<EmailMessage[]> {
+
+  // Call /gmail/scan which returns the company data
+  const data = await http<EmailMessage[]>("/gmail/scan");
+  return data;
 }

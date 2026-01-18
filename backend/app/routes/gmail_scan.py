@@ -57,7 +57,7 @@ def normalize_domain(domain: str) -> str:
 
 
 @router.get("/scan")
-def scan_accounts(request: Request, years: int = 5, limit: int = 300):
+def scan_accounts(request: Request, years: int = 1, limit: int = 300):
     session_id = request.cookies.get("gmail_session_id")
     if not session_id:
         raise HTTPException(401, "Missing session cookie")

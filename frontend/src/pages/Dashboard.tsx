@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { scanAccounts, logout, getMe, getGmailStatus, startGmailConnect, disconnectGmail, type ScanResult, type UserInfo } from '../api/client';
+import { scanAccounts, logout, getMe, getGmailStatus, startGmailConnect, disconnectGmail, type ScanResult, type UserInfo, type EmailMessage } from '../api/client';
 import TopNav from '../components/TopNav';
 import Footer from '../components/Footer';
 import Button from '../components/Button';
 import './Dashboard.css';
+import { getGmailMessages } from '../api/client';
 
 type ViewState = "landing" | "scanning" | "results" | "error";
 
@@ -28,6 +29,17 @@ export default function Dashboard() {
   const [scanResults, setScanResults] = useState<ScanResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [scanStep, setScanStep] = useState(0);
+  const [emails, setEmails] = useState<EmailMessage[]>([]);
+
+
+  useEffect(() => {
+    const fetchEmails = async () => {
+      if (!gmailConnected) return;
+      const data = await getGmailMessages();
+      setEmails(data);
+    };
+    fetchEmails();
+  }, [gmailConnected]);
 
   const scanSteps = [
     "Connecting to Gmail...",
@@ -303,30 +315,19 @@ useEffect(() => {
               </tr>
             </thead>
             <tbody>
-              {accounts.map((result, idx) => {
-                const hasOptOut = 'hasOptOut' in result && result.hasOptOut;
+              {emails.map((result, idx) => {
                 return (
-                  <tr key={result.domain || idx}>
-                    <td className="company-name">{result.displayName || result.domain}</td>
-                    <td className="first-seen">{result.lastSeen || 'Unknown'}</td>
+                  <tr key={idx}>
+                    <td className="company-name">{result.displayName}</td>
+                    <td className="first-seen">{result.lastSeen}</td>
                     <td className="opt-out">
-                      {hasOptOut ? (
-                        <Button 
-                          variant="pill" 
-                          color="orange" 
-                          onClick={() => handleOptOut(result, 'save')}
-                        >
-                          Save
-                        </Button>
-                      ) : (
-                        <Button 
-                          variant="pill" 
-                          color="purple" 
-                          onClick={() => handleOptOut(result, 'generate')}
-                        >
-                          Generate Letter
-                        </Button>
-                      )}
+                      <Button 
+                        variant="pill" 
+                        color="purple" 
+                        onClick={() => handleOptOut(result, 'generate')}
+                      >
+                        Generate Letter
+                      </Button>
                     </td>
                   </tr>
                 );
