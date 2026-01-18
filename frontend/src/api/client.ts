@@ -12,6 +12,27 @@ export type UserInfo = {
   name?: string;
 };
 
+export type LetterResponse = {
+  ok: boolean;
+  letter?: string;
+  email_address?: string;
+  company_name?: string;
+  email_subject?: string;
+  missing?: {
+    privacy_policy_url?: boolean;
+    privacy_contact_email?: boolean;
+  };
+  found?: Record<string, unknown>;
+  debug?: Record<string, unknown>;
+};
+
+export type LetterData = {
+  letter: string;
+  email_address: string;
+  company_name: string;
+  email_subject: string;
+};
+
 export type EmailMessage = {
   domain: string;
   displayName?: string;
@@ -182,5 +203,25 @@ export async function getGmailMessages(): Promise<EmailMessage[]> {
 
   // Call /gmail/scan which returns the company data
   const data = await http<EmailMessage[]>("/gmail/scan");
+  return data;
+}
+
+
+export async function generateLetter(companyName: string, companyDomain?: string): Promise<LetterResponse> {
+  // Construct website URL from domain if not provided
+  const companyWebsiteUrl = companyDomain 
+    ? (companyDomain.startsWith('http') ? companyDomain : `https://${companyDomain}`)
+    : `https://${companyName.toLowerCase().replace(/\s+/g, '')}.com`;
+  
+  const data = await http<LetterResponse>("/letter/generate", {
+    method: "POST",
+    body: JSON.stringify({ 
+      company_name: companyName,
+      company_website_url: companyWebsiteUrl,
+      product_or_service_used: "",
+      user_full_name: "",
+      user_email: "",
+    }),
+  });
   return data;
 }

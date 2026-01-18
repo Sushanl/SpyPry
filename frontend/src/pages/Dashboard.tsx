@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { scanAccounts, logout, getMe, getGmailStatus, startGmailConnect, disconnectGmail, type ScanResult, type UserInfo, type EmailMessage } from '../api/client';
+import { scanAccounts, logout, getMe, getGmailStatus, startGmailConnect, disconnectGmail, generateLetter, type ScanResult, type UserInfo, type EmailMessage, type LetterData } from '../api/client';
 import TopNav from '../components/TopNav';
 import Footer from '../components/Footer';
 import Button from '../components/Button';
+import LetterModal from '../components/LetterModal';
 import './Dashboard.css';
 import { getGmailMessages } from '../api/client';
 
@@ -30,6 +31,10 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [scanStep, setScanStep] = useState(0);
   const [emails, setEmails] = useState<EmailMessage[]>([]);
+  const [isLetterModalOpen, setIsLetterModalOpen] = useState(false);
+  const [letterData, setLetterData] = useState<LetterData | null>(null);
+  const [isGeneratingLetter, setIsGeneratingLetter] = useState(false);
+  const [letterError, setLetterError] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -159,11 +164,38 @@ useEffect(() => {
     setGmailConnected(status.connected);
   };
 
-  const handleOptOut = (result: ScanResult, action: 'save' | 'generate') => {
+  const handleOptOut = async (result: ScanResult | EmailMessage, action: 'save' | 'generate') => {
     if (action === 'save') {
       alert(`Saving opt-out preference for ${result.displayName || result.domain}`);
     } else {
-      alert(`Generating opt-out letter for ${result.displayName || result.domain}`);
+      const companyName = result.displayName || result.domain || 'Unknown';
+      const companyDomain = result.domain || companyName;
+      setIsLetterModalOpen(true);
+      setIsGeneratingLetter(true);
+      setLetterData(null);
+      setLetterError(null);
+      
+      try {
+        const response = await generateLetter(companyName, companyDomain);
+        if (response.ok && response.letter && response.email_address && response.email_subject) {
+          setLetterData({
+            letter: response.letter,
+            email_address: response.email_address,
+            company_name: response.company_name || companyName,
+            email_subject: response.email_subject,
+          });
+          setLetterError(null);
+        } else {
+          const missingFields = response.missing ? Object.keys(response.missing).filter(k => response.missing![k as keyof typeof response.missing]).join(', ') : 'unknown';
+          setLetterError(`Could not generate letter. Missing: ${missingFields}`);
+          setLetterData(null);
+        }
+      } catch (err) {
+        setLetterError(err instanceof Error ? err.message : "Failed to generate letter");
+        setLetterData(null);
+      } finally {
+        setIsGeneratingLetter(false);
+      }
     }
   };
 
@@ -324,7 +356,10 @@ useEffect(() => {
                       <Button 
                         variant="pill" 
                         color="purple" 
-                        onClick={() => handleOptOut(result, 'generate')}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOptOut(result, 'generate');
+                        }}
                       >
                         Generate Letter
                       </Button>
@@ -337,6 +372,18 @@ useEffect(() => {
         </div>
       </main>
       <Footer />
+      
+      <LetterModal
+        isOpen={isLetterModalOpen}
+        onClose={() => {
+          setIsLetterModalOpen(false);
+          setLetterData(null);
+          setLetterError(null);
+        }}
+        letterData={letterData}
+        isGenerating={isGeneratingLetter}
+        error={letterError}
+      />
     </div>
   );
 }
