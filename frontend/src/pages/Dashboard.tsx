@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { scanAccounts, logout, getMe, type ScanResult, type UserInfo } from '../api/client';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { scanAccounts, logout, getMe, getGmailStatus, startGmailConnect, type ScanResult, type UserInfo } from '../api/client';
 import TopNav from '../components/TopNav';
 import Footer from '../components/Footer';
 import Button from '../components/Button';
@@ -20,8 +20,10 @@ const mockAccounts = [
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [user, setUser] = useState<UserInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [gmailConnected, setGmailConnected] = useState(false);
   const [viewState, setViewState] = useState<ViewState>("results");
   const [scanResults, setScanResults] = useState<ScanResult[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +37,7 @@ export default function Dashboard() {
     "Finalizing results...",
   ];
 
-  // Check authentication on mount
+  // Check authentication and Gmail status on mount
   useEffect(() => {
     const checkAuth = async () => {
       setIsLoading(true);
@@ -46,10 +48,24 @@ export default function Dashboard() {
         return;
       }
       setUser(userInfo);
+      
+      // Check Gmail connection status
+      const gmailStatus = await getGmailStatus();
+      setGmailConnected(gmailStatus.connected);
+      
       setIsLoading(false);
     };
     checkAuth();
   }, [navigate]);
+
+  // Handle Gmail connection callback
+  useEffect(() => {
+    if (searchParams.get('gmail_connected') === 'true') {
+      setGmailConnected(true);
+      // Remove query parameter from URL
+      setSearchParams({});
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     // Load mock data for demo
@@ -65,6 +81,11 @@ export default function Dashboard() {
   }, [viewState, scanResults.length]);
 
   const handleStartScan = async () => {
+    if (!gmailConnected) {
+      alert("Please connect your Gmail account first to scan for accounts.");
+      return;
+    }
+
     setViewState("scanning");
     setError(null);
     setScanStep(0);
@@ -90,6 +111,10 @@ export default function Dashboard() {
       setError(err instanceof Error ? err.message : "Failed to scan accounts");
       setViewState("error");
     }
+  };
+
+  const handleConnectGmail = () => {
+    startGmailConnect();
   };
 
   const handleOptOut = (result: ScanResult, action: 'save' | 'generate') => {
@@ -196,8 +221,13 @@ export default function Dashboard() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            {!gmailConnected && (
+              <Button variant="pill" color="purple" onClick={handleConnectGmail}>
+                Connect Gmail
+              </Button>
+            )}
             <Button variant="pill" color="coral" onClick={handleStartScan}>
-              Delete Scan
+              {gmailConnected ? 'Scan Accounts' : 'Delete Scan'}
             </Button>
             <Button variant="pill" color="black" onClick={handleLogout}>
               Log Out
@@ -205,9 +235,29 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="accounts-count">
-          We found {accounts.length} accounts
-        </div>
+        {!gmailConnected && (
+          <div style={{ 
+            padding: '20px', 
+            margin: '20px 0', 
+            backgroundColor: '#fff3cd', 
+            border: '1px solid #ffc107', 
+            borderRadius: '8px',
+            textAlign: 'center'
+          }}>
+            <p style={{ margin: '0 0 12px 0', fontWeight: '500' }}>
+              Connect your Gmail account to scan for accounts
+            </p>
+            <Button variant="primary" color="purple" onClick={handleConnectGmail}>
+              Connect Gmail
+            </Button>
+          </div>
+        )}
+
+        {gmailConnected && (
+          <div className="accounts-count">
+            We found {accounts.length} accounts
+          </div>
+        )}
 
         <div className="accounts-table-container">
           <table className="accounts-table">

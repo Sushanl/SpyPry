@@ -40,13 +40,23 @@ class GoogleLoginPayload(BaseModel):
 
 
 def create_session_cookie(payload: dict) -> str:
-    # Keep session small; don't dump the entire token
-    session_data = {
-        "sub": payload.get("sub"),
-        "email": payload.get("email"),
-        "name": payload.get("name"),
-        "picture": payload.get("picture"),
-    }
+    # If payload already looks like a session dict (has "email" but not Google token fields like "iss", "aud")
+    # then preserve all data (this is an existing session being updated)
+    # Otherwise, extract only user info from Google token payload
+    is_session_dict = "email" in payload and "iss" not in payload and "aud" not in payload
+    
+    if is_session_dict:
+        # This is an existing session being updated - preserve all fields (including Gmail tokens)
+        session_data = payload
+    else:
+        # This is a new session from Google token - extract only user info
+        # Keep session small; don't dump the entire token
+        session_data = {
+            "sub": payload.get("sub"),
+            "email": payload.get("email"),
+            "name": payload.get("name"),
+            "picture": payload.get("picture"),
+        }
     return serializer.dumps(session_data)
 
 

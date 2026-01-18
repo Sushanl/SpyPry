@@ -113,6 +113,19 @@ export async function getMe(): Promise<UserInfo | null> {
   }
 }
 
+export async function getGmailStatus(): Promise<{ connected: boolean; email?: string }> {
+  if (MOCK_MODE) {
+    return { connected: false };
+  }
+
+  try {
+    const data = await http<{ connected: boolean; email?: string }>("/gmail/status");
+    return data;
+  } catch {
+    return { connected: false };
+  }
+}
+
 export function startGmailConnect(): void {
   if (MOCK_MODE) {
     // In mock mode, just trigger the scan flow
