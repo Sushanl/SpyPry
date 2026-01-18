@@ -10,7 +10,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as grequests
 
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
-
+from .routes.gmail import router as gmail_router
 load_dotenv()
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
@@ -109,3 +109,6 @@ def me(request: Request):
         raise HTTPException(status_code=401, detail="Not logged in")
     session = read_session_cookie(cookie)
     return {"user": session}
+
+
+app.include_router(gmail_router)

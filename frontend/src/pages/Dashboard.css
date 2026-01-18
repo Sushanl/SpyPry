@@ -1,186 +1,173 @@
-.dashboard-page {
+.dashboard {
   min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.dashboard-loading {
   display: flex;
-  flex-direction: column;
-  background: var(--color-bg);
-}
-
-.dashboard-main {
-  flex: 1;
-  max-width: var(--max-width);
-  width: 100%;
-  margin: 0 auto;
-  padding: var(--space-8) var(--space-8);
-}
-
-.dashboard-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: var(--space-8);
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 1.5rem;
 }
 
 .dashboard-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: var(--space-6);
-  gap: var(--space-4);
+  align-items: center;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.dashboard-title-section {
-  flex: 1;
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
 }
 
-.dashboard-title {
-  font-size: var(--font-size-4xl);
-  font-weight: var(--font-weight-bold);
-  margin-bottom: var(--space-2);
-  color: var(--color-text);
+.logout-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  font-family: inherit;
 }
 
-.dashboard-subtitle {
-  font-size: var(--font-size-base);
-  color: var(--color-text-muted);
+.logout-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
-.accounts-count {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-  margin-bottom: var(--space-4);
+.dashboard-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
 }
 
-.accounts-table-container {
-  background: var(--color-surface);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--color-border-light);
+.welcome-section {
+  text-align: center;
+  margin-bottom: 3rem;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.accounts-table {
-  width: 100%;
-  border-collapse: collapse;
+.welcome-section h2 {
+  margin: 0 0 1rem 0;
+  font-size: 2.5rem;
+  font-weight: 700;
 }
 
-.accounts-table thead {
-  background: #e3f2fd;
+.user-email {
+  margin: 1rem 0 0 0;
+  font-size: 1.1rem;
+  opacity: 0.9;
 }
 
-.accounts-table th {
-  padding: var(--space-4) var(--space-6);
-  text-align: left;
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text);
-  border-bottom: 1px solid var(--color-border);
+.email-label {
+  font-weight: 600;
+  margin-right: 0.5rem;
 }
 
-.accounts-table td {
-  padding: var(--space-4) var(--space-6);
-  border-bottom: 1px solid var(--color-border-light);
-  font-size: var(--font-size-base);
-  color: var(--color-text);
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  margin-bottom: 3rem;
 }
 
-.accounts-table tbody tr:last-child td {
-  border-bottom: none;
+.dashboard-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.accounts-table tbody tr:hover {
-  background: var(--color-muted);
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
-.company-name {
-  font-weight: var(--font-weight-medium);
+.dashboard-card h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
 }
 
-.first-seen {
-  color: var(--color-text-muted);
+.dashboard-card p {
+  margin: 0 0 1.5rem 0;
+  opacity: 0.9;
+  line-height: 1.6;
 }
 
-.opt-out {
-  text-align: right;
-}
-
-.error-message {
-  padding: var(--space-4);
-  background: #fee2e2;
-  border-left: 4px solid #ef4444;
-  border-radius: var(--radius-md);
-  color: #991b1b;
-  margin-bottom: var(--space-6);
-}
-
-.error-actions {
-  display: flex;
-  gap: var(--space-4);
-}
-
-.progress-container {
-  margin-top: var(--space-8);
-}
-
-.progress-bar {
-  width: 100%;
-  height: 8px;
-  background: #e5e7eb;
-  border-radius: var(--radius-full);
-  overflow: hidden;
-  margin-bottom: var(--space-6);
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--color-accent) 0%, var(--color-accent-purple) 100%);
-  transition: width 0.3s ease;
-  border-radius: var(--radius-full);
-}
-
-.scan-steps {
+.card-stats {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: 0.5rem;
 }
 
-.scan-step {
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  transition: all 0.2s;
+.stat-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: white;
 }
 
-.scan-step.active {
-  background: #f0f4ff;
-  color: var(--color-accent);
+.stat-label {
+  font-size: 0.9rem;
+  opacity: 0.8;
 }
 
-.scan-step.current {
-  background: #e0e7ff;
-  color: var(--color-accent-purple);
-  font-weight: var(--font-weight-medium);
+.recent-activity {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.recent-activity h3 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.activity-list {
+  min-height: 100px;
+}
+
+.activity-item {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  margin: 0.5rem 0;
+  opacity: 0.8;
 }
 
 @media (max-width: 768px) {
-  .dashboard-main {
-    padding: var(--space-6) var(--space-4);
-  }
-  
   .dashboard-header {
     flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .accounts-table {
-    font-size: var(--font-size-sm);
-  }
-  
-  .accounts-table th,
-  .accounts-table td {
-    padding: var(--space-3) var(--space-4);
-  }
-  
-  .opt-out {
+    gap: 1rem;
     text-align: center;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .welcome-section h2 {
+    font-size: 2rem;
   }
 }
